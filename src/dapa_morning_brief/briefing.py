@@ -41,6 +41,16 @@ TOPIC_KEYWORDS: Final[tuple[str, ...]] = (
     "한국항공우주",
 )
 
+MORNING_QUOTES: Final[tuple[str, ...]] = (
+    "대한민국 안보는 정확한 정보에서 시작됩니다.",
+    "튼튼한 국방은 치밀한 준비에서 완성됩니다.",
+    "오늘의 정확한 판단이 내일의 전력을 만듭니다.",
+    "방위사업의 작은 점검이 큰 안보를 지킵니다.",
+    "현장의 정보가 정책과 전력화의 출발점입니다.",
+    "국방의 미래는 꾸준한 확인과 실행에서 시작됩니다.",
+    "빠른 동향 파악이 더 나은 의사결정을 만듭니다.",
+)
+
 
 def build_briefing(
     articles: Iterable[Article],
@@ -82,7 +92,7 @@ def format_telegram_message(briefing: Briefing, *, today: date) -> str:
         f"방사청 출근길 오늘의 뉴스는?💡 - {today:%Y.%m.%d}",
         "",
         "💬 오늘의 한마디",
-        '"대한민국 안보는 정확한 정보에서 시작됩니다."',
+        f'"{daily_quote(today)}"',
     ]
     for section in SECTION_ORDER:
         lines.extend(["", "━━━━━━━━━━━━━━━", ""])
@@ -125,6 +135,11 @@ def summarize_title(title: str) -> str:
     if len(cleaned) <= 40:
         return cleaned
     return f"{cleaned[:37].rstrip()}..."
+
+
+def daily_quote(today: date) -> str:
+    """Return a deterministic quote that changes by date."""
+    return MORNING_QUOTES[today.toordinal() % len(MORNING_QUOTES)]
 
 
 def _section_heading(section: Section) -> str:

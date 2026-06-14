@@ -107,3 +107,31 @@ class BriefingTest(TestCase):
         self.assertIn("현 정부 주요 뉴스", message)
         self.assertIn("1. 이재명 대통령 방산 수출 지원 확대 언급", message)
         self.assertIn("🔗 https://example.com/president", message)
+
+    def test_format_telegram_message_rotates_daily_quote(self) -> None:
+        # Given
+        briefing = build_briefing([], max_per_section=3)
+
+        # When
+        first_message = format_telegram_message(
+            briefing,
+            today=datetime(2026, 6, 14, tzinfo=timezone.utc).date(),
+        )
+        second_message = format_telegram_message(
+            briefing,
+            today=datetime(2026, 6, 15, tzinfo=timezone.utc).date(),
+        )
+
+        # Then
+        self.assertNotEqual(
+            _quote_line(first_message),
+            _quote_line(second_message),
+        )
+
+
+def _quote_line(message: str) -> str:
+    for line in message.splitlines():
+        if line.startswith('"') and line.endswith('"'):
+            return line
+    msg = "message does not contain a quoted daily phrase"
+    raise AssertionError(msg)
