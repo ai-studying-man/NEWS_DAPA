@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "30,45 21 * * *"
     - cron: "0 22 * * *"
+  repository_dispatch:
+    types: [dapa-morning-brief]
   workflow_dispatch:
 
 jobs:
@@ -25,20 +27,20 @@ jobs:
       - id: kst-date
         run: echo "today=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_OUTPUT"
       - id: sent-cache
-        if: github.event_name == 'schedule'
+        if: github.event_name != 'workflow_dispatch'
         uses: actions/cache/restore@v4
         with:
           path: .dapa-sent
           key: dapa-morning-brief-${{ steps.kst-date.outputs.today }}
       - name: Send Telegram brief
-        if: github.event_name != 'schedule' || steps.sent-cache.outputs.cache-hit != 'true'
+        if: github.event_name == 'workflow_dispatch' || steps.sent-cache.outputs.cache-hit != 'true'
         run: uv run python -m dapa_morning_brief.cli --days 3 --fallback-days 5
       - name: Mark scheduled brief sent
-        if: github.event_name == 'schedule' && steps.sent-cache.outputs.cache-hit != 'true' && success()
+        if: github.event_name != 'workflow_dispatch' && steps.sent-cache.outputs.cache-hit != 'true' && success()
         run: |
           mkdir -p .dapa-sent
           echo "${{ steps.kst-date.outputs.today }}" > ".dapa-sent/${{ steps.kst-date.outputs.today }}"
-      - if: github.event_name == 'schedule' && steps.sent-cache.outputs.cache-hit != 'true' && success()
+      - if: github.event_name != 'workflow_dispatch' && steps.sent-cache.outputs.cache-hit != 'true' && success()
         uses: actions/cache/save@v4
         with:
           path: .dapa-sent
