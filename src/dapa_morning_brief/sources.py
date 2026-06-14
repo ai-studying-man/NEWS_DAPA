@@ -11,6 +11,13 @@ USER_AGENT: Final[str] = (
 )
 
 SECTION_QUERIES: Final[dict[Section, str]] = {
+    Section.GOVERNMENT: (
+        "이재명 대통령 방산 OR 이 대통령 방산 OR 대통령 방위사업 OR 대통령 방위산업 "
+        "OR 대통령 국방획득 OR 대통령 국방예산 OR 대통령 자주국방 "
+        "OR 국방부 장관 방위사업 OR 국방부 장관 방산 OR 국방부 장관 무기체계 "
+        "OR 합참의장 방위사업 OR 합참의장 방산 "
+        "OR 육군참모총장 방산 OR 해군참모총장 방산 OR 공군참모총장 방산"
+    ),
     Section.POLICY: (
         "방위사업청 OR 방위사업 OR 방위력개선 OR 국방획득 OR 국방조달 "
         "OR 방위사업법 OR 국방예산 OR 국방정책"
@@ -46,6 +53,12 @@ RELEVANT_KEYWORDS: Final[tuple[str, ...]] = (
     "방위사업법",
     "국방예산",
     "국방정책",
+    "국방부 장관",
+    "국방장관",
+    "합참의장",
+    "참모총장",
+    "자주국방",
+    "핵잠수함",
     "방산",
     "방위산업",
     "무기체계",
@@ -54,12 +67,12 @@ RELEVANT_KEYWORDS: Final[tuple[str, ...]] = (
     "시험평가",
     "야전운용시험",
     "국방과학연구소",
-    "add",
-    "kf-21",
-    "k2 전차",
-    "k9",
-    "l-sam",
-    "m-sam",
+    "ADD",
+    "KF-21",
+    "K2 전차",
+    "K9",
+    "L-SAM",
+    "M-SAM",
     "천궁",
     "미사일",
     "전투기",
@@ -68,10 +81,10 @@ RELEVANT_KEYWORDS: Final[tuple[str, ...]] = (
     "드론",
     "무인기",
     "한화에어로",
-    "lig넥스원",
+    "LIG넥스원",
     "현대로템",
     "한국항공우주",
-    "kai",
+    "KAI",
     "풍산",
 )
 

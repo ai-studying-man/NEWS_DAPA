@@ -3,11 +3,12 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from datetime import date
-from typing import Final
+from typing import Final, assert_never
 
 from dapa_morning_brief.models import Article, Briefing, Section
 
 SECTION_ORDER: Final[tuple[Section, ...]] = (
+    Section.GOVERNMENT,
     Section.POLICY,
     Section.WEAPON_SYSTEM,
     Section.EXPORT_BUSINESS,
@@ -32,6 +33,8 @@ TOPIC_KEYWORDS: Final[tuple[str, ...]] = (
     "K9",
     "K2",
     "천궁",
+    "핵잠수함",
+    "전작권",
     "한화에어로스페이스",
     "LIG넥스원",
     "현대로템",
@@ -46,6 +49,7 @@ def build_briefing(
 ) -> Briefing:
     """Select newest non-duplicate articles for each section."""
     buckets: dict[Section, list[Article]] = {section: [] for section in SECTION_ORDER}
+    global_seen_topics: set[str] = set()
 
     for section in SECTION_ORDER:
         seen_topics: set[str] = set()
@@ -59,32 +63,35 @@ def build_briefing(
         )
         for article in candidates:
             topic = _dedupe_key(article.title)
-            if topic in seen_topics:
+            if topic in seen_topics or topic in global_seen_topics:
                 continue
             seen_topics.add(topic)
+            global_seen_topics.add(topic)
             buckets[section].append(article)
             if len(buckets[section]) >= max_per_section:
                 break
 
     return Briefing(
-        sections={
-            section: tuple(buckets[section])
-            for section in SECTION_ORDER
-        },
+        sections={section: tuple(buckets[section]) for section in SECTION_ORDER},
     )
 
 
 def format_telegram_message(briefing: Briefing, *, today: date) -> str:
     """Render a Telegram-ready plain text briefing."""
     lines = [
-        f"🛡️ 방산출근길 - {today:%Y.%m.%d}",
+        f"방사청 출근길 오늘의 뉴스는?💡 - {today:%Y.%m.%d}",
         "",
         "💬 오늘의 한마디",
         '"대한민국 안보는 정확한 정보에서 시작됩니다."',
     ]
     for section in SECTION_ORDER:
-        lines.extend(["", "━━━━━━━━━━━━━━━", "", _section_heading(section), ""])
+        lines.extend(["", "━━━━━━━━━━━━━━━", ""])
         articles = briefing.sections[section]
+        if section is Section.GOVERNMENT and not articles:
+            lines.append("현 정부 주요 뉴스 : 오늘은 관련 내용 없음")
+            continue
+
+        lines.extend([_section_heading(section), ""])
         if not articles:
             lines.append("수집 기사 없음")
             continue
@@ -122,22 +129,30 @@ def summarize_title(title: str) -> str:
 
 def _section_heading(section: Section) -> str:
     match section:
+        case Section.GOVERNMENT:
+            return f"🗞️ {section.title}"
         case Section.POLICY:
             return f"🏛️ {section.title}"
         case Section.WEAPON_SYSTEM:
             return f"⚙️ {section.title}"
         case Section.EXPORT_BUSINESS:
             return f"🌏 {section.title}"
+        case unreachable:
+            assert_never(unreachable)
 
 
 def _practice_point(section: Section) -> str:
     match section:
+        case Section.GOVERNMENT:
+            return "대통령·국방부·군 주요 직위자 발언의 사업 영향 확인 필요."
         case Section.POLICY:
             return "관련 제도, 예산, 조달 일정의 실무 영향 확인 필요."
         case Section.WEAPON_SYSTEM:
             return "체계개발, 시험평가, 양산 일정 변동 여부 확인 필요."
         case Section.EXPORT_BUSINESS:
             return "수출 계약, 공급망, 업체별 사업 영향 확인 필요."
+        case unreachable:
+            assert_never(unreachable)
 
 
 def _source_rank(source: str) -> int:

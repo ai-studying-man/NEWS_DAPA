@@ -31,6 +31,10 @@ def parse_rss_items(
             continue
         if not is_relevant_title(title):
             continue
+        if default_section is Section.GOVERNMENT and not _is_current_government_news(
+            title.casefold(),
+        ):
+            continue
         section = default_section or classify_title(title)
         source = _source_from_item(item) or source_name
         articles.append(
@@ -49,6 +53,8 @@ def parse_rss_items(
 def classify_title(title: str) -> Section:
     """Classify an article title into the closest newsletter section."""
     text = title.casefold()
+    if _is_current_government_news(text):
+        return Section.GOVERNMENT
     if _contains_any(
         text,
         (
@@ -93,6 +99,40 @@ def is_relevant_title(title: str) -> bool:
     return _contains_any(text, RELEVANT_KEYWORDS)
 
 
+def _is_current_government_news(text: str) -> bool:
+    government_actor_terms = (
+        "이재명 대통령",
+        "이 대통령",
+        "국방부 장관",
+        "국방장관",
+        "합참의장",
+        "육군참모총장",
+        "해군참모총장",
+        "공군참모총장",
+    )
+    defense_terms = (
+        "방위사업",
+        "방산",
+        "방위산업",
+        "방산수출",
+        "국방",
+        "자주국방",
+        "무기체계",
+        "전력화",
+        "k방산",
+        "획득",
+        "방위력개선",
+        "국방예산",
+        "핵잠수함",
+        "무인기",
+        "드론",
+    )
+    return _contains_any(text, government_actor_terms) and _contains_any(
+        text,
+        defense_terms,
+    )
+
+
 def _text(item: ET.Element, name: str) -> str:
     found = item.find(name)
     if found is None or found.text is None:
@@ -121,4 +161,4 @@ def _clean_title(title: str) -> str:
 
 
 def _contains_any(text: str, needles: Iterable[str]) -> bool:
-    return any(needle in text for needle in needles)
+    return any(needle.casefold() in text for needle in needles)
