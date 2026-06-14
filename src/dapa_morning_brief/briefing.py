@@ -1,0 +1,163 @@
+from __future__ import annotations
+
+import re
+from collections.abc import Iterable
+from datetime import date
+from typing import Final
+
+from dapa_morning_brief.models import Article, Briefing, Section
+
+SECTION_ORDER: Final[tuple[Section, ...]] = (
+    Section.POLICY,
+    Section.WEAPON_SYSTEM,
+    Section.EXPORT_BUSINESS,
+)
+
+SOURCE_PRIORITY: Final[tuple[str, ...]] = (
+    "정책브리핑",
+    "방위사업청",
+    "국방부",
+    "국방일보",
+    "뉴스와이어",
+    "네이버",
+    "Google",
+)
+
+TOPIC_KEYWORDS: Final[tuple[str, ...]] = (
+    "방산혁신클러스터",
+    "미르온",
+    "KF-21",
+    "L-SAM",
+    "M-SAM",
+    "K9",
+    "K2",
+    "천궁",
+    "한화에어로스페이스",
+    "LIG넥스원",
+    "현대로템",
+    "한국항공우주",
+)
+
+
+def build_briefing(
+    articles: Iterable[Article],
+    *,
+    max_per_section: int,
+) -> Briefing:
+    """Select newest non-duplicate articles for each section."""
+    buckets: dict[Section, list[Article]] = {section: [] for section in SECTION_ORDER}
+
+    for section in SECTION_ORDER:
+        seen_topics: set[str] = set()
+        candidates = sorted(
+            (article for article in articles if article.section == section),
+            key=lambda article: (
+                _source_rank(article.source),
+                -article.published_at.timestamp(),
+                article.title,
+            ),
+        )
+        for article in candidates:
+            topic = _dedupe_key(article.title)
+            if topic in seen_topics:
+                continue
+            seen_topics.add(topic)
+            buckets[section].append(article)
+            if len(buckets[section]) >= max_per_section:
+                break
+
+    return Briefing(
+        sections={
+            section: tuple(buckets[section])
+            for section in SECTION_ORDER
+        },
+    )
+
+
+def format_telegram_message(briefing: Briefing, *, today: date) -> str:
+    """Render a Telegram-ready plain text briefing."""
+    lines = [
+        f"🛡️ 방산출근길 - {today:%Y.%m.%d}",
+        "",
+        "💬 오늘의 한마디",
+        '"대한민국 안보는 정확한 정보에서 시작됩니다."',
+    ]
+    for section in SECTION_ORDER:
+        lines.extend(["", "━━━━━━━━━━━━━━━", "", _section_heading(section), ""])
+        articles = briefing.sections[section]
+        if not articles:
+            lines.append("수집 기사 없음")
+            continue
+        for index, article in enumerate(articles, start=1):
+            lines.extend(
+                [
+                    f"{index}. {article.title}",
+                    f"→ {summarize_title(article.title)}",
+                    f"📌 실무 참고: {_practice_point(section)}",
+                    f"🔗 {article.url}",
+                    "",
+                ],
+            )
+
+    lines.extend(
+        [
+            "━━━━━━━━━━━━━━━",
+            "",
+            "📊 오늘의 키워드",
+            "",
+            "#방위사업 #무기체계 #전력화 #K방산 #방산수출",
+        ],
+    )
+    return "\n".join(lines).strip()
+
+
+def summarize_title(title: str) -> str:
+    """Create a short 30-40 character summary from article title metadata."""
+    cleaned = re.sub(r"\s+", " ", title).strip(" -|[]")
+    cleaned = re.sub(r"^\[[^\]]+\]\s*", "", cleaned)
+    if len(cleaned) <= 40:
+        return cleaned
+    return f"{cleaned[:37].rstrip()}..."
+
+
+def _section_heading(section: Section) -> str:
+    match section:
+        case Section.POLICY:
+            return f"🏛️ {section.title}"
+        case Section.WEAPON_SYSTEM:
+            return f"⚙️ {section.title}"
+        case Section.EXPORT_BUSINESS:
+            return f"🌏 {section.title}"
+
+
+def _practice_point(section: Section) -> str:
+    match section:
+        case Section.POLICY:
+            return "관련 제도, 예산, 조달 일정의 실무 영향 확인 필요."
+        case Section.WEAPON_SYSTEM:
+            return "체계개발, 시험평가, 양산 일정 변동 여부 확인 필요."
+        case Section.EXPORT_BUSINESS:
+            return "수출 계약, 공급망, 업체별 사업 영향 확인 필요."
+
+
+def _source_rank(source: str) -> int:
+    for index, keyword in enumerate(SOURCE_PRIORITY):
+        if keyword in source:
+            return index
+    return len(SOURCE_PRIORITY)
+
+
+def _normalize_title(title: str) -> str:
+    return re.sub(r"\s+", "", title).casefold()
+
+
+def _dedupe_key(title: str) -> str:
+    normalized = _normalize_title(title)
+    if ("공격헬기" in normalized or "미르온" in normalized) and "엔진" in normalized:
+        return "topic:공격헬기엔진"
+    if "대드론" in normalized and "요격" in normalized:
+        return "topic:대드론요격"
+    for keyword in TOPIC_KEYWORDS:
+        if _normalize_title(keyword) in normalized:
+            return f"topic:{_normalize_title(keyword)}"
+    return normalized

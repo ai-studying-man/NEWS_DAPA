@@ -1,0 +1,57 @@
+[project]
+name = "dapa-morning-brief"
+version = "0.1.0"
+description = "DAPA Morning Brief Telegram newsletter automation"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "feedparser>=6.0.11",
+    "googlenewsdecoder>=0.1.7",
+    "httpx>=0.28.1",
+    "pyTelegramBotAPI>=4.28.0",
+]
+
+[project.scripts]
+dapa-morning-brief = "dapa_morning_brief.cli:main"
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.31.0",
+    "pytest>=8.4.0",
+    "ruff>=0.12.0",
+]
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.11"
+pythonPlatform = "All"
+include = ["src", "tests"]
+exclude = ["**/__pycache__", "**/.venv", "**/build", "**/dist"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812",
+    "CPY001",
+    "D203",
+    "D213",
+    "FBT001",
+    "FBT002",
+    "FIX002",
+    "ISC001",
+    "TD002",
+    "TD003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D", "PLR2004", "S101"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
