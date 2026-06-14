@@ -29,3 +29,23 @@ def send_telegram_message(*, token: str, chat_id: str, text: str) -> None:
         response = client.post(url, json=payload)
     if response.status_code >= 400:
         raise TelegramSendError(status_code=response.status_code, body=response.text)
+
+
+def parse_chat_ids(raw_chat_ids: str) -> tuple[str, ...]:
+    """Parse comma-separated Telegram chat IDs."""
+    return tuple(
+        chat_id
+        for chat_id in (part.strip() for part in raw_chat_ids.split(","))
+        if chat_id
+    )
+
+
+def send_telegram_messages(
+    *,
+    token: str,
+    chat_ids: tuple[str, ...],
+    text: str,
+) -> None:
+    """Send the same message to one or more Telegram chats."""
+    for chat_id in chat_ids:
+        send_telegram_message(token=token, chat_id=chat_id, text=text)

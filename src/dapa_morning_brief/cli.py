@@ -8,7 +8,11 @@ from datetime import UTC, datetime
 
 from dapa_morning_brief.briefing import build_briefing, format_telegram_message
 from dapa_morning_brief.collector import collect_articles
-from dapa_morning_brief.telegram import TelegramSendError, send_telegram_message
+from dapa_morning_brief.telegram import (
+    TelegramSendError,
+    parse_chat_ids,
+    send_telegram_messages,
+)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -40,13 +44,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     token = args.telegram_token or os.getenv("TELEGRAM_BOT_TOKEN", "")
-    chat_id = args.telegram_chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
-    if not token or not chat_id:
+    raw_chat_ids = (
+        args.telegram_chat_id
+        or os.getenv("TELEGRAM_CHAT_IDS", "")
+        or os.getenv("TELEGRAM_CHAT_ID", "")
+    )
+    chat_ids = parse_chat_ids(raw_chat_ids)
+    if not token or not chat_ids:
         sys.stderr.write("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are required.\n")
         return 2
 
     try:
-        send_telegram_message(token=token, chat_id=chat_id, text=message)
+        send_telegram_messages(token=token, chat_ids=chat_ids, text=message)
     except TelegramSendError as error:
         sys.stderr.write(f"{error}\n")
         return 1

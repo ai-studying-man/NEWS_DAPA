@@ -6,7 +6,7 @@
 
 - 한국 시간대 cron: `30 6 * * *`
 - UTC 기준 cron: `30 21 * * *`
-- 07:00 KST로 바꾸려면 한국 시간대 cron은 `0 7 * * *`, UTC cron은 `0 22 * * *`입니다.
+- 발송 기준은 06:30 KST로 고정하며, GitHub Actions에서는 UTC 기준 `30 21 * * *`를 사용합니다.
 
 ## 필수 환경변수
 
@@ -14,6 +14,12 @@
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 TZ=Asia/Seoul
+```
+
+`TELEGRAM_CHAT_ID`는 쉼표로 구분해 여러 수신 대상을 지정할 수 있습니다.
+
+```text
+TELEGRAM_CHAT_ID=6015255978,-1004402722342
 ```
 
 BotFather에서 Telegram bot token을 만들고, 봇을 채널 또는 단체방에 추가한 뒤

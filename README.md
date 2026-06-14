@@ -24,6 +24,12 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 ```
 
+여러 대상에 동시에 보내려면 `TELEGRAM_CHAT_ID`에 쉼표로 구분한 값을 넣습니다.
+
+```text
+TELEGRAM_CHAT_ID=6015255978,-1004402722342
+```
+
 ## 기본 동작
 
 - 정책브리핑 방위사업청/국방부 RSS와 국방일보 RSS를 우선 수집합니다.
