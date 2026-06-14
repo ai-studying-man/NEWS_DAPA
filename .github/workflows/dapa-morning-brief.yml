@@ -20,4 +20,4 @@ jobs:
           python-version: "3.11"
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
-      - run: uv run dapa-morning-brief --days 3 --fallback-days 5
+      - run: uv run python -m dapa_morning_brief.cli --days 3 --fallback-days 5
