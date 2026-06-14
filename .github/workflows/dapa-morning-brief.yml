@@ -2,7 +2,8 @@ name: DAPA Morning Brief
 
 on:
   schedule:
-    - cron: "30 21 * * *"
+    - cron: "30,45 21 * * *"
+    - cron: "0 22 * * *"
   workflow_dispatch:
 
 jobs:
@@ -21,4 +22,24 @@ jobs:
           python-version: "3.11"
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
-      - run: uv run python -m dapa_morning_brief.cli --days 3 --fallback-days 5
+      - id: kst-date
+        run: echo "today=$(TZ=Asia/Seoul date +%F)" >> "$GITHUB_OUTPUT"
+      - id: sent-cache
+        if: github.event_name == 'schedule'
+        uses: actions/cache/restore@v4
+        with:
+          path: .dapa-sent
+          key: dapa-morning-brief-${{ steps.kst-date.outputs.today }}
+      - name: Send Telegram brief
+        if: github.event_name != 'schedule' || steps.sent-cache.outputs.cache-hit != 'true'
+        run: uv run python -m dapa_morning_brief.cli --days 3 --fallback-days 5
+      - name: Mark scheduled brief sent
+        if: github.event_name == 'schedule' && steps.sent-cache.outputs.cache-hit != 'true' && success()
+        run: |
+          mkdir -p .dapa-sent
+          echo "${{ steps.kst-date.outputs.today }}" > ".dapa-sent/${{ steps.kst-date.outputs.today }}"
+      - if: github.event_name == 'schedule' && steps.sent-cache.outputs.cache-hit != 'true' && success()
+        uses: actions/cache/save@v4
+        with:
+          path: .dapa-sent
+          key: dapa-morning-brief-${{ steps.kst-date.outputs.today }}
