@@ -6,7 +6,11 @@
 
 - 한국 시간대 cron: `30 6 * * *`
 - UTC 기준 cron: `30 21 * * *`
-- 발송 기준은 06:30 KST로 고정하며, GitHub Actions에서는 UTC 기준 `30 21 * * *`를 사용합니다.
+- 발송 기준은 06:30 KST로 고정합니다.
+- GitHub Actions는 예약 실행이 1시간 이상 지연될 수 있으므로 05:30~06:30 KST에
+  여러 번 깨워 두고, 실행된 runner가 06:30 KST까지 대기한 뒤 발송합니다.
+- GitHub가 06:50 KST 이후에야 runner를 시작하면 출근 알림 의미가 약해지므로
+  해당 run은 발송하지 않고 다음 날 일정을 기다립니다.
 
 ## 필수 환경변수
 
@@ -64,8 +68,18 @@ python -m dapa_morning_brief.cli --dry-run
 
 ## GitHub Actions
 
-GitHub Actions cron은 UTC 기준입니다. 06:30 KST 실행은
-`.github/workflows/dapa-morning-brief.yml`의 `30 21 * * *` 설정을 사용합니다.
+GitHub Actions cron은 UTC 기준입니다. 다만 scheduled workflow는 GitHub 큐 상황에
+따라 지연될 수 있으므로 `.github/workflows/dapa-morning-brief.yml`은 아래 UTC
+일정으로 runner를 미리 시작합니다.
+
+```cron
+30,45 20 * * *
+0,15,30 21 * * *
+```
+
+위 일정은 05:30, 05:45, 06:00, 06:15, 06:30 KST에 해당합니다. workflow 내부에서
+06:30 KST 전이면 `sleep`으로 대기하고, 같은 날짜에 이미 발송한 기록이 있으면
+추가 발송을 건너뜁니다.
 
 Repository Secrets에 다음 값을 등록합니다.
 
