@@ -35,19 +35,15 @@ jobs:
         run: |
           now_epoch=$(TZ=Asia/Seoul date +%s)
           target_epoch=$(TZ=Asia/Seoul date -d "$(TZ=Asia/Seoul date +%F) 06:30:00" +%s)
-          latest_epoch=$(TZ=Asia/Seoul date -d "$(TZ=Asia/Seoul date +%F) 06:50:00" +%s)
 
           if [ "$now_epoch" -lt "$target_epoch" ]; then
             sleep_seconds=$((target_epoch - now_epoch))
             echo "Waiting ${sleep_seconds}s for 06:30 KST send window."
             sleep "$sleep_seconds"
-            echo "should_send=true" >> "$GITHUB_OUTPUT"
-          elif [ "$now_epoch" -le "$latest_epoch" ]; then
-            echo "should_send=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Skipping because GitHub started after 06:50 KST."
-            echo "should_send=false" >> "$GITHUB_OUTPUT"
+            echo "GitHub started after 06:30 KST; sending now."
           fi
+          echo "should_send=true" >> "$GITHUB_OUTPUT"
       - id: sent-cache
         if: github.event_name != 'workflow_dispatch'
         uses: actions/cache/restore@v4
